@@ -1,5 +1,5 @@
-MAD
-===
+MAD - Tony's Edition
+====================
 
 A simple rebar-compatible dependency manager and developer tool with plugins.
 
@@ -10,8 +10,12 @@ Goals
 
 It shall:
 
-* be compatible with rebar configuration.
-* be as small and fast as possible.
+* be small and fast.
+* be readable.
+* be testable with common test.
+* be testable with dializer.
+* be fully compatible with mad as supported by synrc.
+* to catch errors as soon as possible.
 
 Features
 --------
@@ -166,8 +170,7 @@ without Erlang prerequisite.
 
 Support
 -------
-* [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/5HT/n2o?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-* IRC Channel #n2o on FreeNode 24/7
+Email: tony@tony.gen.nz.
 
 Documentation
 -------
@@ -177,11 +180,20 @@ philosophy is a fit for your project
 
 * Official MAD brochure [PDF](http://synrc.com/apps/mad/doc/book.pdf)
 
+To Do
+-----
+* With the exception of the recompile test, the tests in the test
+suite fail.  They appear to be written against an API that no
+longer exists.  Fix them.
+* Insert dializer meta data (eg -spec).
+* Replace -export_all() with a proper list of exported functions.
+
 Credits
 -------
 
 * Maxim Sokhatsky
 * Sina Samavati
 * Vladimir Kirillov
+* Tony Wallace
 
-OM A HUM
+
