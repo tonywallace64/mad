@@ -14,6 +14,7 @@ init_per_suite(Config) ->
     PrivDir=get_value(priv_dir,Config),
     DataDir=get_value(data_dir,Config),
     Fn=filename:join([DataDir,"TestConfig"]),
+    ok=copy_file(filename:join(DataDir,"oldmad"),filename:join(PrivDir,"oldmad")),
     {ok,UserConfig} = file:consult(Fn),
     assert(is_property_list(UserConfig),"TestConfig does not return a valid property list"),
     NewConfig = Config ++ UserConfig,
@@ -47,16 +48,19 @@ copy_filelist([H|T],SrcDir,DstDir,Recursive) ->
 
 copy_head(true,false,_,H,DstDir) ->
     DstFile = filename:join(DstDir,filename:basename(H)),
-    ct_logs:tc_pal(file_copy,"~s ~s",[H,DstFile]),
-    {ok,_}=file:copy(H,DstFile),
-    {ok,Fi}=file:read_file_info(H),
-    ok=file:write_file_info(DstFile,Fi);
+    copy_file(H,DstFile);
 copy_head(false,true,false,_,_) ->
     ok;
 copy_head(false,true,true,Dirname,DstDir) ->
     NewDst = filename:join(DstDir,filename:basename(Dirname)),
     copy_files(Dirname,NewDst,{recursive,true}).
 
+copy_file(Src,Dst) ->
+    ct_logs:tc_pal(file_copy,"~s ~s",[Src,Dst]),
+    {ok,_}=file:copy(Src,Dst),
+    {ok,Fi}=file:read_file_info(Src),
+    ok=file:write_file_info(Dst,Fi).
+   
 do_valid_cmd(Cmd) ->
     ct_logs:tc_pal(os_cmd,"~s",[Cmd]),
     Result=os:cmd(Cmd ++ " && echo ok"),
