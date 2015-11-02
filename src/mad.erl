@@ -2,11 +2,14 @@
 -author("Tony Wallace").
 -version("1.0.0").
 -include("mad.hrl").
--compile(export_all).
--export([main/1]).
+%-compile(export_all).
+-export([main/1,profile/0,help/1,help/2,info/2]).
 
-%% Code simplified and commented by Tony Wallace (AJW)
 %% 18 October 2015
+%%   Code simplified and commented by Tony Wallace (AJW)
+%% 3 November 2015
+%%   -export declaration
+%%   Passes selfcompile test
 
 main([])          -> help();
 main(Params)      ->
