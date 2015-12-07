@@ -1,6 +1,7 @@
 -module(mad_escript).
 -description("ESCRIPT bundles").
--compile(export_all).
+%-compile(export_all).
+-export([main/1]).
 
 main(N) ->
     App = filename:basename(case N of [] -> mad_utils:cwd(); E -> E end),
