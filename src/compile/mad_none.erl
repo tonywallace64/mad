@@ -1,4 +1,4 @@
 -module(mad_none).
--compile(export_all).
+-export([compile/5]).
 
 compile(_,_,_,_,_) -> false.

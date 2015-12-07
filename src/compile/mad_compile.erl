@@ -1,16 +1,16 @@
 -module(mad_compile).
 -copyright('Sina Samavati').
--compile(export_all).
-
+%-compile(export_all).
+-export([compile/1,dep/4,deps/4,is_compiled/2,list/1]).
 compile(Params) ->
     { Cwd, ConfigFile, Conf } = mad_utils:configs(),
     Res = case Params of
-         [] -> mad_compile:'compile-deps'(Cwd, ConfigFile, Conf);
-         __ -> mad_compile:deps(Cwd, Conf, ConfigFile, [Params])
+         [] -> compile_deps(Cwd, ConfigFile, Conf);
+         __ -> deps(Cwd, Conf, ConfigFile, [Params])
     end,
     case bool(Res) of
          true -> {error,Params};
-         false -> mad_compile:'compile-apps'(Cwd, ConfigFile, Conf) end.
+         false -> 'compile-apps'(Cwd, ConfigFile, Conf) end.
 
 deps(_, _, _, []) -> {ok,deps};
 deps(Cwd, Conf, ConfigFile, [H|T]) ->
@@ -100,7 +100,7 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
          Apps -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd),
                  mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
 
-'compile-deps'(Cwd, ConfigFile, Conf) ->
+compile_deps(Cwd, ConfigFile, Conf) ->
     mad_compile:deps(Cwd, Conf, ConfigFile, mad_utils:get_value(deps, Conf, [])).
 
 list(X) when is_atom(X) -> atom_to_list(X);
