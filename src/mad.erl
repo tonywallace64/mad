@@ -1,50 +1,57 @@
 -module(mad).
 -author("Tony Wallace").
--version("1.0.0").
+-version("1.0.1").
 -include("mad.hrl").
 %-compile(export_all).
--export([main/1,profile/0,help/1,help/2,info/2]).
+-export([main/1,profile/0,help/0,help/1,help/2,info/1,info/2,parser_test/0]).
 
 %% 18 October 2015
 %%   Code simplified and commented by Tony Wallace (AJW)
 %% 3 November 2015
 %%   -export declaration
 %%   Passes selfcompile test
+%% 5 December
+%%   factor out lexical analysis and parsing
+%%   parsing with yecc
+
+-type escript_parameters() :: [string()].
+-spec main(escript_parameters()) -> any().
+
+parser_test() ->
+    io:format("~p~n~n",[{ok,[{deps,[]}]} = mad_parser:parse([{cmd,1,deps},{eof,1}])]),
+    io:format("~p~n~n",[{ok,[{release,[script,"mymad"]}]} =
+	mad_parser:parse([{release,1},{rel_opt,1,script},{parameter,1,"mymad"},{eof,1}])]),
+    io:format("~p~n~n",[{ok,[{deps,[]},{release,[script,"mymad"]}]} =
+	mad_parser:parse([{cmd,1,deps},{release,2},{rel_opt,2,script},{parameter,2,"mymad"},{eof,2}])]),
+    io:format("~p~n~n",[{ok,[{deps,[]}]} = mad_parser(["deps"])]),
+    {ok,[{deps,[]},{release,[script,"mymad"]}]}=mad_parser(["deps","release","script","mymad"]),
+    {error,_}=mad_parser(["release"]),
+    {error,_}=mad_parser(["release","script"]),
+    {error,_}=mad_parser(["release","mymad"]),
+    "Tests passed okay".
 
 main([])          -> help();
 main(Params)      ->
     io:format("mad:main(~p)~n",[Params]),
     Parsed = mad_parser(Params),
     io:format("parse output ~p~n",[Parsed]),
-    execute_all(Parsed).
+    maybe_execute_all(Parsed).
 
-mad_parser(Params) ->
-    %% Comments by AJW
-    %% This next expression parses the list Params,
-    %% from right to left (foldr),
-    %% accumulating string parameters in order in the first tuple position
-    %% identifying commands because they have been atomised
-    %% and then assembling these commands in order with their parameters
-    %% in a list stored in the second tuple position
+maybe_execute_all(A={error,_}) ->
+    A;
+maybe_execute_all({ok,Valid}) ->
+    execute_all(Valid).
 
-    %% commands processed by mad are introduced by a token
-    %% atomize turns these predefined tokens into atoms
-    Lex = lists:map(fun atomize/1, Params),
-
-    EmptyStack = [],
-    PushParameter = fun(Stack,P) -> [P|Stack] end,
-    %% This function pushes string parameters onto a stack
-    %% and associates this stack with its command.
-    %% This works because the mad parameters are processed right to left
-    ProcessSymbol  =
-               fun (Command,{PStack,ParsedCommands}) when is_atom(Command) -> 
-		       {EmptyStack,[{Command,PStack}|ParsedCommands]};
-                   (Param,{PStack,Remaining}) -> 
-		       {PushParameter(PStack,Param),Remaining} end,
-    { _UnmatchedStrings, _CommandList } 
-	 =  lists:foldr(ProcessSymbol,  {EmptyStack,[]}, Lex).
-
-execute_all({[],Valid}) ->
+-spec mad_parser(escript_parameters()) -> parser_output().
+-type parser_output() :: command_list().
+-type command_list() :: [{Command :: atom(),escript_parameters()}].
+mad_parser(Parameters) ->
+    Lex=madscan:scan(Parameters),
+    io:format("Lexical output ~p~n",[Lex]),
+    mad_parser:parse(Lex).
+    
+-spec execute_all(parser_output()) -> any().
+execute_all(Valid) ->
     %% Run commands in order of original command line,
     %% using the command mapping (Dispatcher) as referenced in the "profile" application 
     %% environment variable.  The value of the environment variable is 
@@ -55,10 +62,7 @@ execute_all({[],Valid}) ->
     %% Process in return values from the command with errors procedure,
     %% and return boolean, true if errors false if no errors.
     Dispatcher = profile(),
-    execute2(ok,Dispatcher,Valid);
-execute_all({Unmatched_Params,_}) ->
-    errors(Unmatched_Params),
-    return(error).
+    execute2(ok,Dispatcher,Valid).
 
 execute2(ok,Dispatcher,[{Fun,Arg}|ToDoList]) ->
     io:format("Dispatching ~p with ~p~n",[Fun,Arg]),
@@ -68,24 +72,6 @@ execute2(error,_,_) ->
     return(error);
 execute2(ok,_,[]) ->
     return(ok).
-
-atomize("static") -> 'static';
-atomize("deploy") -> 'deploy';
-atomize("app"++_) -> 'app';
-atomize("dep")    -> 'deps';
-atomize("deps")   -> 'deps';
-atomize("cle"++_) -> 'clean';
-atomize("com"++_) -> 'compile';
-atomize("up")     -> 'up';
-atomize("rel"++_) -> 'release';
-atomize("bun"++_) -> 'release';
-atomize("sta"++_) -> 'start';
-atomize("sto"++_) -> 'stop';
-atomize("att"++_) -> 'attach';
-atomize("sh")     -> 'sh';
-atomize("rep"++_) -> 'sh';
-atomize("pla"++_) -> 'release';
-atomize(Else)     -> Else.
 
 profile()         -> application:get_env(mad,profile,mad_local).
 
