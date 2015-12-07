@@ -1,6 +1,6 @@
 -module(mad_resolve).
 -author('Maxim Sokhatsky').
--compile(export_all).
+-export([main/1]).
 
 % dependency graph solver
 
