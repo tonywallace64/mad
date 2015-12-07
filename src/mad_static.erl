@@ -1,8 +1,8 @@
 -module(mad_static).
 -copyright('Yuri Artemev').
--compile(export_all).
 -define(NODE(Bin), "node_modules/.bin/"++Bin).
 
+-export([main/2,app/1]).
 main(Config, ["watch"]) ->
     case mad_utils:get_value(static, Config, []) of
         [] -> {ok,static};
