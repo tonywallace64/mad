@@ -43,8 +43,7 @@ compile_static(Files) ->
         {_,_,_} -> mad:info("error while compiling assets~n"), {error,compile} end.
 
 app([]) -> app(["sample"]);
-app(Params) ->
-    [Name] = Params,
+app(_Params=[Name]) ->
     mad_repl:load(),
     Apps = ets:tab2list(filesystem),
     [ case string:str(File,"priv/web") of

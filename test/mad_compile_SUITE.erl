@@ -3,9 +3,6 @@
 -export([all/0]).
 -export([erl_files/1]).
 -export([app_src_files/1]).
--export([is_app_src/1]).
--export([app_src_to_app/1]).
--export([erl_to_beam/1]).
 -export([deps/1]).
 -export([app/1]).
 -export([is_compiled/1]).
@@ -15,7 +12,7 @@
 
 all() ->
     [
-     erl_files, app_src_files, is_app_src, app_src_to_app, erl_to_beam, deps,
+     erl_files, app_src_files, deps,
      app, is_compiled
     ].
 
@@ -23,29 +20,18 @@ erl_files(Config) ->
     DataDir = get_value(data_dir, Config),
     SrcDir = filename:join([DataDir, "deps", "one", "src"]),
     ErlFile = filename:join(SrcDir, "one.erl"),
-    [ErlFile] = mad_compile:erl_files(SrcDir).
+    {ok,_}=mad_compile:compile([SrcDir]).
 
 app_src_files(Config) ->
     DataDir = get_value(data_dir, Config),
     SrcDir = filename:join([DataDir, "deps", "one", "src"]),
     AppSrcFile = filename:join(SrcDir, "one.app.src"),
-    [AppSrcFile] = mad_compile:app_src_files(SrcDir).
-
-is_app_src(_) ->
-    false = mad_compile:is_app_src("/path/to/file.erl"),
-    true = mad_compile:is_app_src("/path/to/file.app.src").
-
-app_src_to_app(_) ->
-    "file.app" = mad_compile:app_src_to_app("/path/to/file.app.src").
-
-erl_to_beam(_) ->
-    "/path/to/ebin/file.beam" = mad_compile:erl_to_beam("/path/to/ebin",
-                                                        "/path/to/file.erl").
+    {ok,_}=mad_compile:compile(AppSrcFile).
 
 deps(Config) ->
     DataDir = get_value(data_dir, Config),
     Deps = [{one, "", {}}, {two, "", {}}],
-    ok = mad_compile:deps(DataDir, Config, "rebar.config", Deps),
+    {ok,deps} = mad_compile:deps(DataDir, Config, "rebar.config", Deps),
     pong = one:ping(),
     pong = two:ping(),
     ok = application:load(one),
@@ -60,7 +46,7 @@ deps(Config) ->
 
 app(Config) ->
     DataDir = get_value(data_dir, Config),
-    ok = mad_compile:app(DataDir, Config, "rebar.config"),
+    {ok,_} = mad_compile:compile(["rebar.config"]),
     pong = three:ping(),
     ok = application:load(three),
     {ok, [three]} = application:get_key(three, modules),

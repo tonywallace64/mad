@@ -32,7 +32,6 @@ parser_test() ->
 
 main([])          -> help();
 main(Params)      ->
-    io:format("mad:main(~p)~n",[Params]),
     Parsed = mad_parser(Params),
     io:format("parse output ~p~n",[Parsed]),
     maybe_execute_all(Parsed).
@@ -47,7 +46,6 @@ maybe_execute_all({ok,Valid}) ->
 -type command_list() :: [{Command :: atom(),escript_parameters()}].
 mad_parser(Parameters) ->
     Lex=madscan:scan(Parameters),
-    io:format("Lexical output ~p~n",[Lex]),
     mad_parser:parse(Lex).
     
 -spec execute_all(parser_output()) -> any().
@@ -87,8 +85,21 @@ return(error)      -> 1;
 return(ok)         -> 0;
 return(X)          -> X.
 
-info(Format)      -> io:format(lists:concat([Format,"\r"])).
-info(Format,Args) -> io:format(lists:concat([Format,"\r"]),Args).
+format_stack_entry(S) ->
+    {Module,Fun,Arity,[{file,_File},{line,Line}]}=S,
+    io_lib:format("~p:~p/~p,{line,~p} ==>",[Module,Fun,Arity,Line]).
+stacktop([Top|_]) ->
+    Top.
+ancestor(N) ->
+    {_,Stacktrace}=erlang:process_info(self(),current_stacktrace),
+    ancestor(N+1,Stacktrace).
+ancestor(1,S) ->
+    format_stack_entry(stacktop(S));
+ancestor(N,[_|T]) ->
+    ancestor(N-1,T).
+
+info(Format)      -> io:format(lists:concat([ancestor(2),Format,"\r"])).
+info(Format,Args) -> io:format(lists:concat([ancestor(2),Format,"\r"]),Args).
 
 help(Reason,D)    -> help(io_lib:format("~s ~p", [Reason, D])).
 help(Msg)         -> help("Message",Msg).

@@ -27,12 +27,13 @@ parse_applist(AppList) ->
    Res = string:tokens(string:strip(string:strip(binary_to_list(AppList),right,$]),left,$[),","),
    [ list_to_atom(R) || R <-Res ]  -- disabled().
 
+%% AJW
+%% Cause program to die if no sys.config found
 load_config() ->
    Config = wildcards(["sys.config"]),
    Apps = case Config of
-        [] -> case mad_repl:load_file("sys.config") of
-              {error,_} -> [];
-              {ok,Bin} -> parse(binary_to_list(Bin)) end;
+        [] -> {ok,Bin} = load_file("sys.config"),
+	      parse(binary_to_list(Bin));
       File -> case file:consult(File) of
               {error,_} -> [];
               {ok,[A]} -> A end end,
@@ -61,6 +62,7 @@ load_apps(Params,_,_Acc) -> [ application:ensure_all_started(list_to_atom(A))||A
 cwd() -> case  file:get_cwd() of {ok, Cwd} -> Cwd; _ -> "." end.
 
 sh(Params) ->
+    io:format(standard_error,"mad_repl:sh(~p)~n",[Params]),
     { _Cwd,_ConfigFileName,_Config } = mad_utils:configs(),
     SystemPath = filelib:wildcard(code:root_dir() ++ "/lib/{"
               ++ string:join([atom_to_list(X)||X<-mad_repl:system()],",") ++ "}-*/ebin"),
@@ -81,6 +83,7 @@ sh(Params) ->
         _ ->  timer:sleep(infinity) end.
 
 load() ->
+    io:format(standard_error,"mad_repl:load script~s~n",[escript:script_name()]),
     ets_created(),
     {ok,Sections} = escript:extract(escript:script_name(),[]),
     [Bin] = [B||{archive,B}<-Sections],

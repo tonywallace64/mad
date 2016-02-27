@@ -1,6 +1,8 @@
 -module(mad_resolve).
 -author('Maxim Sokhatsky').
--export([main/1]).
+
+%% orderapps called from mad_app
+-export([main/1,orderapps/0]).
 
 % dependency graph solver
 

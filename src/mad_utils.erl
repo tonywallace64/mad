@@ -1,7 +1,21 @@
 -module(mad_utils).
 -copyright('Sina Samavati').
--compile(export_all).
 
+%% AJW
+%% Changed consult to fail 
+%% as this is regarded by me as an error condition.
+%% Bugs should be reported as soon as possible, not
+%% covered to cause problems later.
+%% Joes Dictum:
+%%  - Fail Fast
+%%  - Fail Noisily
+%%  - Fail Politely
+%%
+%% Noise added by outputing the name of the configuration file
+%% that caused the problem so that it can be fixed.
+%%
+-compile(export_all).
+-export([configs/0,name_and_repo/1]).
 %% internal
 name_and_repo({Name, _, Repo}) when is_list(Name) -> {Name, Repo};
 name_and_repo({Name, _, Repo, _}) when is_list(Name) -> {Name, Repo};
@@ -13,13 +27,16 @@ name_and_repo(Name) -> {Name,Name}.
 
 cwd() -> {ok, Cwd} = file:get_cwd(), Cwd.
 home() -> {ok, [[H|_]]} = init:get_argument(home), H.
+
 consult(File) ->
     AbsFile = filename:absname(File),
     case file:consult(AbsFile) of
-        {ok, V} ->
-            V;
-        _ ->
-            []
+	{ok, V} -> V;
+	X={error,enoent} -> X;
+	{error,Reason} ->
+	    R=file:format_error(Reason),
+	    mad:info("Could not consult file ~s reason ~s~n",[File,R]),
+	    throw(Reason)
     end.
 
 src(Dir) -> filename:join(Dir, "src").

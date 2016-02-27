@@ -3,6 +3,8 @@
 -export([all/0,init_per_suite/1,end_per_suite/1]).
 -export([selfcompile/1]).
 
+-import(copyfiles, [copy_dir_contents/3,copy_file/2]).
+
 %% mad is compiled into an escript
 %% This test uses a known good copy of mad
 %% to compile the System Under Test
@@ -23,44 +25,13 @@ init_per_suite(Config) ->
     copy_files(filename:join(SrcDir,"src"),filename:absname("src"),{recursive,true}),
     copy_files(filename:join(SrcDir,"deps"),filename:absname("deps"),{recursive,true}),
     copy_files(filename:join(SrcDir,"include"),filename:absname("include"),{recursive,true}),
-    % do_valid_cmd("cp --recursive "++filename:join(SrcDir,"src")++" ./src"),
-    % do_valid_cmd("cp --recursive "++filename:join(SrcDir,"deps")++" ./deps"),
-    % do_valid_cmd("cp --recursive "++filename:join(SrcDir,"include")++" ./include"),
     do_valid_cmd("mkdir ebin"),
     do_valid_cmd("make"),
     NewConfig.
 
-copy_files(SrcDir,DstDir,{recursive,Recursive}) ->
-    ct_logs:tc_pal(file_copy,"Current Working directory~n~s",[filename:absname(".")]),
-    case file:make_dir(DstDir) of
-	ok -> ok;
-	{error,eexist} -> ok
-    end,
-    {ok,Files}=file:list_dir(SrcDir),
-    copy_filelist(Files,SrcDir,DstDir,Recursive).
+copy_files(Src,Dst,R) ->
+    copy_dir_contents(Src,Dst,R).
 
-copy_filelist([],_,_,_) ->
-    ok;
-copy_filelist([H|T],SrcDir,DstDir,Recursive) ->
-    Pn = filename:join([SrcDir,H]),
-    copy_head(filelib:is_regular(Pn),filelib:is_dir(Pn),Recursive,Pn,DstDir),
-    copy_filelist(T,SrcDir,DstDir,Recursive).
-
-copy_head(true,false,_,H,DstDir) ->
-    DstFile = filename:join(DstDir,filename:basename(H)),
-    copy_file(H,DstFile);
-copy_head(false,true,false,_,_) ->
-    ok;
-copy_head(false,true,true,Dirname,DstDir) ->
-    NewDst = filename:join(DstDir,filename:basename(Dirname)),
-    copy_files(Dirname,NewDst,{recursive,true}).
-
-copy_file(Src,Dst) ->
-    ct_logs:tc_pal(file_copy,"~s ~s",[Src,Dst]),
-    {ok,_}=file:copy(Src,Dst),
-    {ok,Fi}=file:read_file_info(Src),
-    ok=file:write_file_info(Dst,Fi).
-   
 do_valid_cmd(Cmd) ->
     ct_logs:tc_pal(os_cmd,"~s",[Cmd]),
     Result=os:cmd(Cmd ++ " && echo ok"),

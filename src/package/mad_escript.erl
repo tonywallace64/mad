@@ -1,20 +1,25 @@
 -module(mad_escript).
 -description("ESCRIPT bundles").
 %-compile(export_all).
--export([main/1]).
+-export([main/1,privs/0,beams/0,system_files/0]).
 
 main(N) ->
+    { _Cwd, _ConfigFile, Conf } = mad_utils:configs(),
     App = filename:basename(case N of [] -> mad_utils:cwd(); E -> E end),
     mad_resolve:main([]),
-    EmuArgs = "-noshell -noinput +pc unicode",
+    EmuArgs = mad_utils:get_value(emuargs,Conf,"+pc unicode"),
     Files = static() ++ beams(fun filename:basename/1, fun read_file/1) ++ overlay(),
-%   [ io:format("Escript: ~ts~n",[File]) || { File, _ } <- Files ],
     escript:create(App,[shebang,{comment,""},{emu_args,EmuArgs},{archive,Files,[memory]}]),
     file:change_mode(App, 8#764),
     {ok,App}.
 
+% id(X) called by beams/0
 id(X) -> X.
+
+% read_file called by beams/2 and main/1
 read_file(File) -> {ok, Bin} = file:read_file(filename:absname(File)), Bin.
+
+% static/0 called by main/1
 static() ->
     Name = "static.gz",
     {ok,{_,Bin}} = zip:create(Name,
